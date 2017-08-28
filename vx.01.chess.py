@@ -17,14 +17,24 @@ moving_taxonomy = {"kn":[[2,1],[1,2],[-2,-1],[-2,1],[-1,-2],[-1,2],[2,-1]],
                    "kk":[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]
                    }
 
-eating_taxonomy = {"kn":[[2,1],[1,2],[-2,-1],[-2,1],[-1,-2],[-1,2],[2,-1]],
-                   "bs":[[1,1],[1,-1],[-1,-1],[-1,1],[2,2],[-2,-2],[2,-2],[-2,2],[3,3],[-3,-3],[-3,3],[3,-3],[4,4],[4,-4],[-4,4],[-4,-4],[5,5],[5,-5],[-5,5],[-5,-5],[6,6],[6,-6],[-6,6],[-6,-6],[7,7],[7,-7],[-7,7],[-7,-7]],
-                   "rk":[[0,1],[1,0],[-1,0],[0,-1],[0,2],[2,0],[-2,0],[0,-2],[0,3],[3,0],[-3,0],[0,-3],[0,4],[4,0],[-4,0],[0,-4],[0,5],[5,0],[-5,0],[0,-5],[0,6],[6,0],[-6,0],[0,-6],[0,7],[7,0],[-7,0],[0,-7]],
-                   "pw":[[1,1],[1,-1],[-1,1],[-1,-1]],
-                   "qn":[[1,1],[1,-1],[-1,-1],[-1,1],[2,2],[-2,-2],[2,-2],[-2,2],[3,3],[-3,-3],[-3,3],[3,-3],[4,4],[4,-4],[-4,4],[-4,-4],[5,5],[5,-5],[-5,5],[-5,-5],[6,6],[6,-6],[-6,6],[-6,-6],[7,7],[7,-7],[-7,7],[-7,-7],
-                        [0,1],[1,0],[-1,0],[0,-1],[0,2],[2,0],[-2,0],[0,-2],[0,3],[3,0],[-3,0],[0,-3],[0,4],[4,0],[-4,0],[0,-4],[0,5],[5,0],[-5,0],[0,-5],[0,6],[6,0],[-6,0],[0,-6],[0,7],[7,0],[-7,0],[0,-7]],
-                   "kk":[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]
+eating_taxonomy = {
+    "kn":[[2,1],[1,2],[-2,-1],[-2,1],[-1,-2],[-1,2],[2,-1]],
+    "bs":[[1,1],[1,-1],[-1,-1],[-1,1],[2,2],[-2,-2],[2,-2],[-2,2],[3,3],[-3,-3],[-3,3],[3,-3],[4,4],[4,-4],[-4,4],[-4,-4],[5,5],[5,-5],[-5,5],[-5,-5],[6,6],[6,-6],[-6,6],[-6,-6],[7,7],[7,-7],[-7,7],[-7,-7]],
+    "rk":[[0,1],[1,0],[-1,0],[0,-1],[0,2],[2,0],[-2,0],[0,-2],[0,3],[3,0],[-3,0],[0,-3],[0,4],[4,0],[-4,0],[0,-4],[0,5],[5,0],[-5,0],[0,-5],[0,6],[6,0],[-6,0],[0,-6],[0,7],[7,0],[-7,0],[0,-7]],
+    "pw":[[1,1],[1,-1],[-1,1],[-1,-1]],
+    "qn":[[1,1],[1,-1],[-1,-1],[-1,1],[2,2],[-2,-2],[2,-2],[-2,2],[3,3],[-3,-3],[-3,3],[3,-3],[4,4],[4,-4],[-4,4],[-4,-4],[5,5],[5,-5],[-5,5],[-5,-5],[6,6],[6,-6],[-6,6],[-6,-6],[7,7],[7,-7],[-7,7],[-7,-7],
+          [0,1],[1,0],[-1,0],[0,-1],[0,2],[2,0],[-2,0],[0,-2],[0,3],[3,0],[-3,0],[0,-3],[0,4],[4,0],[-4,0],[0,-4],[0,5],[5,0],[-5,0],[0,-5],[0,6],[6,0],[-6,0],[0,-6],[0,7],[7,0],[-7,0],[0,-7]],
+    "kk":[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]
                    }
+
+value_taxonomy={
+    "kn":3,
+    "bs":3,
+    "rk":5,
+    "pw":1,
+    "qn":10,
+    "kk":20
+}
 
 
 can_jump=set(["kn"])
@@ -186,8 +196,18 @@ class game:
         else:
             return None
 
-    def score_pieces(self,piece_set):
-        return 0
+    def score_pieces(self,piece_set,needed_condition):
+        this_score=0
+        found_condition=False
+        for piece in piece_set:
+            if piece.type in value_taxonomy:
+                this_score+=value_taxonomy[piece.type]
+            if piece.type == needed_condition:
+                found_condition=True
+        if found_condition== True:
+            return this_score
+        else:
+            return 0
 
 
 random.seed()
@@ -231,18 +251,12 @@ while len(whites)>0 and len(blacks)>0:
     passive_set=playing_set[passive_color]
     best_move=this_game.calculate_move(active_set,passive_set)
     this_game.execute_move(best_move,active_set,passive_set)
-    active_score=this_game.score_pieces(active_set)
-    passive_score=this_game.score_pieces(passive_set)
-    print "Scores:", active_score, passive_score
+    active_score=this_game.score_pieces(active_set,"kk")
+    passive_score=this_game.score_pieces(passive_set,"kk")
+    print "Scores:", active_color+str(active_score), passive_color+str(passive_score)
     this_game.printBoard()    
-
-    king_captured=True
-    for piece in passive_set:
-        if piece.type == "kk":
-            king_captured=False
-            break
-    if king_captured==True:
-        print playing_order[(movement_number+1)%len(playing_order)], "King captured... Game over!!!"
+    if passive_score == 0:
+        print passive_color, "Loses Game... Game over!!!"
         break
     movement_number+=1
 
