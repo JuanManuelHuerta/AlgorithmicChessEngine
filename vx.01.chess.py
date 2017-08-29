@@ -1,6 +1,6 @@
 import sys
 import random
-
+from enum import Enum
 
 '''
  how to do enums in python
@@ -42,6 +42,12 @@ polarity={"pw":{"b":1, "w":-1}}
 
 debug=False
 
+class Strategy(Enum):
+    random=0
+    greedy=1
+    look_ahead=2
+
+
 class piece:
 
     def __init__(self,id,loc):
@@ -68,9 +74,9 @@ class game:
     def printBoard(self):
         for row in self.board:
             for this_cell in row:
-                print this_cell.to_text(),
-            print
-        print
+                print(this_cell.to_text(),end=" ")
+            print()
+        print()
 
     def add_piece(self,apiece,coords):
         coords
@@ -123,7 +129,7 @@ class game:
                     new_coordinates=[apiece.position[0]+offset[0],apiece.position[1]+offset[1]]
                 else:
                     if debug==True:
-                        print apiece.id
+                        print(apiece.id)
 
                     if apiece.type in polarity and offset[0]*polarity[apiece.type][apiece.color] < 0:
                         continue
@@ -154,12 +160,12 @@ class game:
                 opponent_set.remove(self.board[new_coordinates[0]][new_coordinates[1]].piece)
             self.board[new_coordinates[0]][new_coordinates[1]].piece=apiece
             self.board[original_position[0]][original_position[1]].piece=None
-            print self.board[new_coordinates[0]][new_coordinates[1]].piece.id, original_position, "->", new_coordinates
+            print(self.board[new_coordinates[0]][new_coordinates[1]].piece.id, original_position, "->", new_coordinates)
 
 
 
 
-    def calculate_move(self,color_set,opponent_set):        
+    def calculate_move(self,color_set,opponent_set,strategy_type):        
         best_move =  self.move_to_capture(color_set,opponent_set)
         if best_move == None:
             best_move=self.move_at_random_to_empty(color_set)
@@ -246,17 +252,17 @@ this_game.printBoard()
 while len(whites)>0 and len(blacks)>0:
     active_color=playing_order[movement_number%len(playing_order)]
     passive_color=playing_order[(movement_number+1)%len(playing_order)]
-    print "Turn of", active_color,  movement_number, len(whites), len(blacks)
+    print("Turn of", active_color,  movement_number, len(whites), len(blacks))
     active_set=playing_set[active_color]
     passive_set=playing_set[passive_color]
-    best_move=this_game.calculate_move(active_set,passive_set)
+    best_move=this_game.calculate_move(active_set,passive_set,Strategy.random)
     this_game.execute_move(best_move,active_set,passive_set)
     active_score=this_game.score_pieces(active_set,"kk")
     passive_score=this_game.score_pieces(passive_set,"kk")
-    print "Scores:", active_color+str(active_score), passive_color+str(passive_score)
+    print("Scores:", active_color+str(active_score), passive_color+str(passive_score))
     this_game.printBoard()    
     if passive_score == 0:
-        print passive_color, "Loses Game... Game over!!!"
+        print(passive_color, "Loses Game... Game over!!!")
         break
     movement_number+=1
 
