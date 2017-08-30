@@ -8,6 +8,17 @@ from enum import Enum
 
 '''
 
+class Strategy(Enum):
+    random=0
+    stupid=1
+    greedy=2
+    max_point=3
+    look_ahead=4
+    learning=5
+
+
+strategy_assignment={'w':Strategy.greedy, 'b':Strategy.greedy}
+
 moving_taxonomy = {"kn":[[2,1],[1,2],[-2,-1],[-2,1],[-1,-2],[-1,2],[2,-1]],
                    "bs":[[1,1],[1,-1],[-1,-1],[-1,1],[2,2],[-2,-2],[2,-2],[-2,2],[3,3],[-3,-3],[-3,3],[3,-3],[4,4],[4,-4],[-4,4],[-4,-4],[5,5],[5,-5],[-5,5],[-5,-5],[6,6],[6,-6],[-6,6],[-6,-6],[7,7],[7,-7],[-7,7],[-7,-7]],
                    "rk":[[0,1],[1,0],[-1,0],[0,-1],[0,2],[2,0],[-2,0],[0,-2],[0,3],[3,0],[-3,0],[0,-3],[0,4],[4,0],[-4,0],[0,-4],[0,5],[5,0],[-5,0],[0,-5],[0,6],[6,0],[-6,0],[0,-6],[0,7],[7,0],[-7,0],[0,-7]],
@@ -41,11 +52,6 @@ can_jump=set(["kn"])
 polarity={"pw":{"b":1, "w":-1}}
 
 debug=False
-
-class Strategy(Enum):
-    random=0
-    greedy=1
-    look_ahead=2
 
 
 class piece:
@@ -164,12 +170,38 @@ class game:
 
 
 
+    def simulate_move(self,chosen_move,color_set,opponent_set):                
+        new_active=set()
+        new_passive=set()
+        for a_piece in color_set:
+            new_active.add( piece(a_piece.id,a_piece.position))
+        for a_piece in color_set:
+            if a_piece.id == chosen_move.piece.id:
+                a_piece.position=chosen_move.target
+                break
+        for a_piece in opponent_set:
+            if a_piece.position != chosen_move.target:
+                new_passive.add(piece(a_piece.id, a_piece.position))
+        return new_active, new_passive
 
-    def calculate_move(self,color_set,opponent_set,strategy_type):        
-        best_move =  self.move_to_capture(color_set,opponent_set)
-        if best_move == None:
+
+
+
+    def calculate_move(self,color_set,opponent_set,strategy_type):
+        if strategy_type is Strategy.greedy:
+            best_move =  self.move_to_capture(color_set,opponent_set)
+            if best_move == None:
+                best_move=self.move_at_random_to_empty(color_set)
+            return best_move
+        elif strategy_type is Strategy.stupid:
             best_move=self.move_at_random_to_empty(color_set)
-        return best_move
+            return best_move
+        else:
+            best_move =  self.move_to_capture(color_set,opponent_set)
+            if best_move == None:
+                best_move=self.move_at_random_to_empty(color_set)
+            return best_move
+            
 
     def move_to_capture(self,color_set,opponent_set):
         possible_moves=[]
@@ -249,13 +281,15 @@ class move:
 ### Start the game  ####
 movement_number=0
 this_game.printBoard()
+
+
 while len(whites)>0 and len(blacks)>0:
     active_color=playing_order[movement_number%len(playing_order)]
     passive_color=playing_order[(movement_number+1)%len(playing_order)]
     print("Turn of", active_color,  movement_number, len(whites), len(blacks))
     active_set=playing_set[active_color]
     passive_set=playing_set[passive_color]
-    best_move=this_game.calculate_move(active_set,passive_set,Strategy.random)
+    best_move=this_game.calculate_move(active_set,passive_set,strategy_assignment[active_color])
     this_game.execute_move(best_move,active_set,passive_set)
     active_score=this_game.score_pieces(active_set,"kk")
     passive_score=this_game.score_pieces(passive_set,"kk")
