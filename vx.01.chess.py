@@ -124,7 +124,9 @@ class game:
         if i[0]>=0 and i[0]<=7 and i[1]>=0 and i[1]<=7:
             return True
         return False
-        
+    
+
+    #NEED TO DEBUG THIS
     def move_at_random_to_empty(self,color_set):
         possible_moves=[]
         for apiece in color_set:
@@ -155,6 +157,14 @@ class game:
             chosen_move=possible_moves[random.randint(0,len(possible_moves)-1)]
             best_move=move(chosen_move)
             return best_move
+
+
+
+
+
+
+
+
 
         
     def execute_move(self,chosen_move,color_set,opponent_set):                
@@ -187,20 +197,63 @@ class game:
 
 
 
-    def calculate_move(self,color_set,opponent_set,strategy_type):
+    def calculate_moves(self,color_set,opponent_set,strategy_type):
+        best_moves=[]
         if strategy_type is Strategy.greedy:
-            best_move =  self.move_to_capture(color_set,opponent_set)
-            if best_move == None:
-                best_move=self.move_at_random_to_empty(color_set)
-            return best_move
+            capturing_moves=self.move_to_capture(color_set,opponent_set)
+            if capturing_moves != None:
+                best_moves+=[capturing_moves]
+            if len(best_moves) == 0:
+                best_moves+=[self.move_at_random_to_empty(color_set)]
+            return best_moves
         elif strategy_type is Strategy.stupid:
-            best_move=self.move_at_random_to_empty(color_set)
-            return best_move
+            best_moves.append(self.move_at_random_to_empty(color_set))
+            return best_moves
         else:
-            best_move =  self.move_to_capture(color_set,opponent_set)
-            if best_move == None:
-                best_move=self.move_at_random_to_empty(color_set)
-            return best_move
+            capturing_moves=self.move_to_capture(color_set,opponent_set)
+            if capturing_moves != None:
+                best_moves+=[capturing_moves]
+            if len(best_moves) == 0:
+                best_moves+=[self.move_at_random_to_empty(color_set)]
+            return best_moves
+
+
+    def calculate_all_moves(self,color_set,opponent_set):
+        possible_moves=[]
+        lay_of_the_land={}
+        for arow in range(len(self.board)):
+            for acol in range(len(self.board[arow])):
+                acel=self.board[arow][acol]
+                if acel.piece is not None:
+                    lay_of_the_land[(arow,acol)]=acel.piece.id
+        for apiece in color_set:
+            my_color=apiece.color
+            original_position=apiece.position
+            for offset in eating_taxonomy[apiece.type]:
+                is_blocked=False
+                if apiece.type in can_jump:
+                    ## We are assuming that can_jump and polarity do not overlap
+                    new_coordinates=(apiece.position[0]+offset[0],apiece.position[1]+offset[1])
+                    print(new_coordinates)
+                else:
+                    if apiece.type in polarity and offset[0]*polarity[apiece.type][apiece.color] < 0:
+                        continue
+                    new_coordinates=(apiece.position[0]+offset[0],apiece.position[1]+offset[1])
+                    for i in self.generate_path(original_position,new_coordinates):
+                        if self.is_in_board(i) is False:
+                            is_blocked=True
+                            break
+                        elif i!= new_coordinates and (i[0],i[1]) in lay_of_the_land:
+                            is_blocked=True
+                            break
+                if is_blocked == False and  self.is_in_board(new_coordinates)==True:
+                    if new_coordinates in lay_of_the_land:
+                        if lay_of_the_land[new_coordinates][0]!=my_color:
+                            possible_moves.append((apiece,new_coordinates,original_position))
+                    else:
+                        possible_moves.append((apiece,new_coordinates,original_position))
+            return possible_moves
+
             
 
     def move_to_capture(self,color_set,opponent_set):
@@ -289,8 +342,29 @@ while len(whites)>0 and len(blacks)>0:
     print("Turn of", active_color,  movement_number, len(whites), len(blacks))
     active_set=playing_set[active_color]
     passive_set=playing_set[passive_color]
-    best_move=this_game.calculate_move(active_set,passive_set,strategy_assignment[active_color])
+
+    ''' 
+    Modify these 3 lines for a search based approach:
+    '''
+
+
+    all_moves=this_game.calculate_moves(active_set,passive_set,strategy_assignment[active_color])
+    best_move=all_moves[0]
     this_game.execute_move(best_move,active_set,passive_set)
+
+    '''
+    Search
+    '''
+    '''
+    all_moves=this_game.calculate_all_moves(active_set,passive_set)
+    print(all_moves)
+    best_move=all_moves[0]
+    this_game.execute_move(best_move,active_set,passive_set)
+    '''
+    #best_move=this_game.rank_by_score(all_moves,passive_set)[0][0]
+
+    #this_game.execute_move(best_move,active_set,passive_set)
+
     active_score=this_game.score_pieces(active_set,"kk")
     passive_score=this_game.score_pieces(passive_set,"kk")
     print("Scores:", active_color+str(active_score), passive_color+str(passive_score))
