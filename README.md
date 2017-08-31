@@ -12,6 +12,8 @@ To run:
    python3 vx.01.chess.py 
 
 
+TEST
+
 
 Features
 
