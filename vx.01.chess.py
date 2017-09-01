@@ -112,7 +112,9 @@ class game:
         temp=x
         #print i, j
         while True:
-            temp=[temp[0]+i,temp[1]+j]
+            temp=(temp[0]+i,temp[1]+j)
+            if debug:
+                print("       source", x,  "  target ", y, temp)
             result.append(temp)
             steps+=1
             if temp==y or steps>=10:
@@ -226,15 +228,20 @@ class game:
                 acel=self.board[arow][acol]
                 if acel.piece is not None:
                     lay_of_the_land[(arow,acol)]=acel.piece.id
+                    if debug:
+                        print((arow,acol),acel.piece.id)
+        #print(lay_of_the_land)
         for apiece in color_set:
             my_color=apiece.color
+            if debug:
+                print(apiece.id)
+
             original_position=apiece.position
             for offset in eating_taxonomy[apiece.type]:
                 is_blocked=False
                 if apiece.type in can_jump:
                     ## We are assuming that can_jump and polarity do not overlap
                     new_coordinates=(apiece.position[0]+offset[0],apiece.position[1]+offset[1])
-                    print(new_coordinates)
                 else:
                     if apiece.type in polarity and offset[0]*polarity[apiece.type][apiece.color] < 0:
                         continue
@@ -250,9 +257,35 @@ class game:
                     if new_coordinates in lay_of_the_land:
                         if lay_of_the_land[new_coordinates][0]!=my_color:
                             possible_moves.append((apiece,new_coordinates,original_position))
-                    else:
+        for apiece in color_set:
+            my_color=apiece.color
+            if debug:
+                print(apiece.id)
+            original_position=apiece.position
+            for offset in moving_taxonomy[apiece.type]:
+                is_blocked=False
+                if apiece.type in can_jump:
+                    new_coordinates=(apiece.position[0]+offset[0],apiece.position[1]+offset[1])
+                else:
+                    if apiece.type in polarity and offset[0]*polarity[apiece.type][apiece.color] < 0:
+                        continue
+                    new_coordinates=(apiece.position[0]+offset[0],apiece.position[1]+offset[1])
+                    for i in self.generate_path(original_position,new_coordinates):
+                        if self.is_in_board(i) is False:
+                            is_blocked=True
+                            break
+                        elif i!= new_coordinates and (i[0],i[1]) in lay_of_the_land:
+                            if debug:
+                                print("blocked by",lay_of_the_land[(i[0],i[1])])
+                            is_blocked=True
+                            break
+                    if debug:
+                        print(is_blocked)
+                if is_blocked == False and  self.is_in_board(new_coordinates)==True:
+                    if not (new_coordinates in lay_of_the_land):
                         possible_moves.append((apiece,new_coordinates,original_position))
-            return possible_moves
+
+        return possible_moves
 
             
 
@@ -326,6 +359,7 @@ class move:
         self.piece=triplet[0]
         self.target=triplet[1]
         self.source=triplet[2]
+        self.score=0
 
     def to_string(self):
         return self.piece.id +" " + str(self.source) + " -> " + str(self.target)
@@ -348,19 +382,20 @@ while len(whites)>0 and len(blacks)>0:
     '''
 
 
-    all_moves=this_game.calculate_moves(active_set,passive_set,strategy_assignment[active_color])
-    best_move=all_moves[0]
-    this_game.execute_move(best_move,active_set,passive_set)
+    #all_moves=this_game.calculate_moves(active_set,passive_set,strategy_assignment[active_color])
+    #best_move=all_moves[0]
+    #this_game.execute_move(best_move,active_set,passive_set)
 
     '''
     Search
     '''
-    '''
     all_moves=this_game.calculate_all_moves(active_set,passive_set)
-    print(all_moves)
-    best_move=all_moves[0]
+    #You have simulate
+    #scored_moves=this_game.score_moves(all_moves,active_set,passive_set)
+    best_move=move(all_moves[0])
     this_game.execute_move(best_move,active_set,passive_set)
-    '''
+
+    
     #best_move=this_game.rank_by_score(all_moves,passive_set)[0][0]
 
     #this_game.execute_move(best_move,active_set,passive_set)
