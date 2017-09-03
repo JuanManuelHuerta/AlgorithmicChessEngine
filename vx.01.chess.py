@@ -1,6 +1,7 @@
 import sys
 import random
 from enum import Enum
+import operator
 
 '''
  how to do enums in python
@@ -163,11 +164,6 @@ class game:
 
 
 
-
-
-
-
-
         
     def execute_move(self,chosen_move,color_set,opponent_set):                
             new_coordinates=chosen_move.target
@@ -182,17 +178,32 @@ class game:
 
 
 
+#    def simulate_move(self,chosen_move,color_set,opponent_set):                
+#        new_active=set()
+#        new_passive=set()
+#        for a_piece in color_set:
+#            new_active.add( piece(a_piece.id,a_piece.position))
+#        for a_piece in color_set:
+#            if a_piece.id == chosen_move.piece.id:
+#                a_piece.position=chosen_move.target
+#                break
+#        for a_piece in opponent_set:
+#            if a_piece.position != chosen_move.target:
+#                new_passive.add(piece(a_piece.id, a_piece.position))
+#        return new_active, new_passive
+
+
     def simulate_move(self,chosen_move,color_set,opponent_set):                
         new_active=set()
         new_passive=set()
         for a_piece in color_set:
             new_active.add( piece(a_piece.id,a_piece.position))
         for a_piece in color_set:
-            if a_piece.id == chosen_move.piece.id:
-                a_piece.position=chosen_move.target
+            if a_piece.id == chosen_move[0]:
+                a_piece.position=chosen_move[2]
                 break
         for a_piece in opponent_set:
-            if a_piece.position != chosen_move.target:
+            if a_piece.position != chosen_move[2]:
                 new_passive.add(piece(a_piece.id, a_piece.position))
         return new_active, new_passive
 
@@ -287,6 +298,20 @@ class game:
 
         return possible_moves
 
+
+   #best_move=this_game.rank_by_score(all_moves,passive_set)[0][0]
+    def score_moves(self,all_moves,active_set,passive_set):
+        scored_moves=[]
+        for amove in all_moves:
+            this_score =0.0
+            this_active, this_passive = self.simulate_move(amove,active_set,passive_set)
+            this_score = self.score_pieces(this_active,"kk")
+            scored_moves.append([this_score,amove])
+        return scored_moves
+        
+    def rank_order(self,scored_moves):
+        sorted_moves=sorted(scored_moves,key=operator.itemgetter(0),reverse=True)
+        return sorted_moves
             
 
     def move_to_capture(self,color_set,opponent_set):
@@ -390,15 +415,10 @@ while len(whites)>0 and len(blacks)>0:
     Search
     '''
     all_moves=this_game.calculate_all_moves(active_set,passive_set)
-    #You have simulate
-    #scored_moves=this_game.score_moves(all_moves,active_set,passive_set)
+    scored_moves=this_game.score_moves(all_moves,active_set,passive_set)
+    best_move=this_game.rank_order(scored_moves)[0][0]
     best_move=move(all_moves[0])
     this_game.execute_move(best_move,active_set,passive_set)
-
-    
-    #best_move=this_game.rank_by_score(all_moves,passive_set)[0][0]
-
-    #this_game.execute_move(best_move,active_set,passive_set)
 
     active_score=this_game.score_pieces(active_set,"kk")
     passive_score=this_game.score_pieces(passive_set,"kk")
@@ -408,4 +428,9 @@ while len(whites)>0 and len(blacks)>0:
         print(passive_color, "Loses Game... Game over!!!")
         break
     movement_number+=1
+    
+    if movement_number > 1000:
+        print ("Tie!")
+        break
+
 
