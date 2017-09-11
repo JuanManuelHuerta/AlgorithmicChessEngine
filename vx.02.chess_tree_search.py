@@ -165,7 +165,7 @@ class game:
 
 
         
-    def execute_move(self,chosen_move,color_set,opponent_set):                
+    def execute_move_on_board(self,chosen_move,color_set,opponent_set):                
             new_coordinates=chosen_move.target
             apiece=chosen_move.piece
             original_position=chosen_move.source
@@ -231,12 +231,11 @@ class game:
             return best_moves
 
 
-    def depth_search(self,active_set,passive_set,look_ahead):
+    def depth_search(self,active_set,passive_set,depth_n):
         all_moves=self.calculate_all_moves(active_set,passive_set)
         scored_moves=self.score_moves(all_moves,active_set,passive_set)
-        best_move=self.rank_order(scored_moves)[0][0]
-        best_move=move(all_moves[0])
-        return best_move
+        best_moves=self.rank_order(scored_moves)[0:depth_n]
+        return best_moves
 
 
     def calculate_all_moves(self,color_set,opponent_set):
@@ -424,11 +423,22 @@ while len(whites)>0 and len(blacks)>0:
     '''
 
 
-    best_move=this_game.depth_search(active_set,passive_set,0)
-    this_game.execute_move(best_move,active_set,passive_set)
+    best_moves=this_game.depth_search(active_set,passive_set,10)
 
+    first_attack=[]
+    for amove in best_moves:
+        #simulate move works on triplets
+        new_active, new_passive=this_game.simulate_move(amove[1],active_set,passive_set)
+        first_attack.append([this_game.score_pieces(new_active,"kk"),[move],new_active,new_passive])
+        pseudo_active=new_passive
+        pseudo_passive=new_active
+        ###  find best_moves for pseudo_active_set 
+        
+    #execute move works on object
+    this_game.execute_move_on_board(move(best_moves[0][1]),active_set,passive_set)
     active_score=this_game.score_pieces(active_set,"kk")
     passive_score=this_game.score_pieces(passive_set,"kk")
+
     print("Scores:", active_color+str(active_score), passive_color+str(passive_score))
     this_game.printBoard()    
     if passive_score == 0:
@@ -439,5 +449,6 @@ while len(whites)>0 and len(blacks)>0:
     if movement_number > 1000:
         print ("Tie!")
         break
+
 
 
