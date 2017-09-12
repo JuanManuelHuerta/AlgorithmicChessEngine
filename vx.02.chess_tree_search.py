@@ -137,7 +137,7 @@ class game:
             for offset in moving_taxonomy[apiece.type]:
                 is_blocked=False
                 if apiece.type in can_jump:
-                    new_coordinates=[apiece.position[0]+offset[0],apiece.position[1]+offset[1]]
+                    new_coordinates=(apiece.position[0]+offset[0],apiece.position[1]+offset[1])
                 else:
                     if debug==True:
                         print(apiece.id)
@@ -145,7 +145,7 @@ class game:
                     if apiece.type in polarity and offset[0]*polarity[apiece.type][apiece.color] < 0:
                         continue
 
-                    new_coordinates=[apiece.position[0]+offset[0],apiece.position[1]+offset[1]]
+                    new_coordinates=(apiece.position[0]+offset[0],apiece.position[1]+offset[1])
                     for i in self.generate_path(original_position,new_coordinates):
                         if self.is_in_board(i)==False:
                             is_blocked=True
@@ -330,11 +330,11 @@ class game:
                 is_blocked=False
                 if apiece.type in can_jump:
                     ## We are assuming that can_jump and polarity do not overlap
-                    new_coordinates=[apiece.position[0]+offset[0],apiece.position[1]+offset[1]]
+                    new_coordinates=(apiece.position[0]+offset[0],apiece.position[1]+offset[1])
                 else:
                     if apiece.type in polarity and offset[0]*polarity[apiece.type][apiece.color] < 0:
                         continue
-                    new_coordinates=[apiece.position[0]+offset[0],apiece.position[1]+offset[1]]
+                    new_coordinates=(apiece.position[0]+offset[0],apiece.position[1]+offset[1])
                     for i in self.generate_path(original_position,new_coordinates):
                         if self.is_in_board(i)==False:
                             is_blocked=True
@@ -427,15 +427,38 @@ while len(whites)>0 and len(blacks)>0:
 
     first_attack=[]
     for amove in best_moves:
-        #simulate move works on triplets
+        #print("Amove",amove)
         new_active, new_passive=this_game.simulate_move(amove[1],active_set,passive_set)
-        first_attack.append([this_game.score_pieces(new_active,"kk"),[move],new_active,new_passive])
-        pseudo_active=new_passive
-        pseudo_passive=new_active
-        ###  find best_moves for pseudo_active_set 
-        
-    #execute move works on object
-    this_game.execute_move_on_board(move(best_moves[0][1]),active_set,passive_set)
+        first_attack.append([this_game.score_pieces(new_active,"kk"),[amove[1]],new_active,new_passive])
+    second_attack=[]
+    for entry in first_attack:
+        new_passive=entry[3]
+        new_active=entry[2]
+        best_moves_l2=this_game.depth_search(new_passive,new_active,10)
+        for amove in best_moves_l2:
+            new_passive, new_active=this_game.simulate_move(amove[1],new_passive,new_active)
+            nl=list(entry[1])
+            nl.append(amove[1])
+            second_attack.append([this_game.score_pieces(new_passive,"kk"),nl,new_passive,new_active])
+    third_attack=[]
+    for entry in second_attack:
+        new_passive=entry[3]
+        new_active=entry[2]
+        best_moves_l3=this_game.depth_search(new_active,new_passive,10)
+        for amove in best_moves_l3:
+            new_active, new_passive=this_game.simulate_move(amove[1],new_active,new_passive)
+            nl=list(entry[1])
+            nl.append(amove[1])
+            third_attack.append([this_game.score_pieces(new_active,"kk"),nl,new_active,new_passive])
+    sorted_third=sorted(third_attack,key=operator.itemgetter(0),reverse=True)
+
+    #chosen_move=move(best_moves[0][1])
+    if active_color=="b":
+        chosen_move=move(sorted_third[0][1][0])
+    else:
+        chosen_move=move(sorted_third[random.randint(0,len(sorted_third)-1)][1][0])
+
+    this_game.execute_move_on_board(chosen_move,active_set,passive_set)
     active_score=this_game.score_pieces(active_set,"kk")
     passive_score=this_game.score_pieces(passive_set,"kk")
 
