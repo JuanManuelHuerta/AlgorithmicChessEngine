@@ -51,7 +51,8 @@ value_taxonomy={
 
 can_jump=set(["kn"])
 polarity={"pw":{"b":1, "w":-1}}
-
+look_ahead_depth=3
+prune_at=200
 debug=False
 
 
@@ -427,32 +428,45 @@ while len(whites)>0 and len(blacks)>0:
 
     first_attack=[]
     for amove in best_moves:
-        #print("Amove",amove)
         new_active, new_passive=this_game.simulate_move(amove[1],active_set,passive_set)
         first_attack.append([this_game.score_pieces(new_active,"kk"),[amove[1]],new_active,new_passive])
-    second_attack=[]
-    for entry in first_attack:
-        new_passive=entry[3]
-        new_active=entry[2]
-        best_moves_l2=this_game.depth_search(new_passive,new_active,10)
-        for amove in best_moves_l2:
-            new_passive, new_active=this_game.simulate_move(amove[1],new_passive,new_active)
-            nl=list(entry[1])
-            nl.append(amove[1])
-            second_attack.append([this_game.score_pieces(new_passive,"kk"),nl,new_passive,new_active])
-    third_attack=[]
-    for entry in second_attack:
-        new_passive=entry[3]
-        new_active=entry[2]
-        best_moves_l3=this_game.depth_search(new_active,new_passive,10)
-        for amove in best_moves_l3:
-            new_active, new_passive=this_game.simulate_move(amove[1],new_active,new_passive)
-            nl=list(entry[1])
-            nl.append(amove[1])
-            third_attack.append([this_game.score_pieces(new_active,"kk"),nl,new_active,new_passive])
-    sorted_third=sorted(third_attack,key=operator.itemgetter(0),reverse=True)
+    if len(first_attack)>prune_at:
+        first_attack=sorted(first_attack,key=operator.itemgetter(0),reverse=True)[0:prune_at]
+    nd=look_ahead_depth
+    while True:
+        second_attack=[]
+        for entry in first_attack:
+            new_passive=entry[3]
+            new_active=entry[2]
+            best_moves_l2=this_game.depth_search(new_passive,new_active,10)
+            for amove in best_moves_l2:
+                new_passive, new_active=this_game.simulate_move(amove[1],new_passive,new_active)
+                nl=list(entry[1])
+                nl.append(amove[1])
+                second_attack.append([this_game.score_pieces(new_passive,"kk"),nl,new_passive,new_active])
+        if len(second_attack)>prune_at:
+            second_attack=sorted(second_attack,key=operator.itemgetter(0),reverse=True)[0:prune_at]
 
-    #chosen_move=move(best_moves[0][1])
+        third_attack=[]
+        for entry in second_attack:
+            new_passive=entry[3]
+            new_active=entry[2]
+            best_moves_l3=this_game.depth_search(new_active,new_passive,10)
+            for amove in best_moves_l3:
+                new_active, new_passive=this_game.simulate_move(amove[1],new_active,new_passive)
+                nl=list(entry[1])
+                nl.append(amove[1])
+                third_attack.append([this_game.score_pieces(new_active,"kk"),nl,new_active,new_passive])
+        if len(third_attack)>prune_at:
+            third_attack=sorted(third_attack,key=operator.itemgetter(0),reverse=True)[0:prune_at]
+
+        nd-=1
+        if nd==0:
+            sorted_third=sorted(third_attack,key=operator.itemgetter(0),reverse=True)
+            print(sorted_third[0][0])
+            break
+        first_attack=third_attack
+        
     if active_color=="b":
         chosen_move=move(sorted_third[0][1][0])
     else:
